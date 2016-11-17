@@ -1,49 +1,97 @@
----
-title: "Crime Analysis - Denver"
-output:
-  html_notebook: default
-  html_document: default
-  pdf_document: default
----
 
-Let's Make some R Notebook come to life!
+####Project Background  
 
-```{r warnings=FALSE}
+As we all know, Colorado is considered one of the scariest places on earth. Denver, CO has had an enormous influx of people over the last decade and it is still ramping up. 
+
+So why did I pick Denver?
+
+That's simple, I have lived in Colorado for the majority of my life and want to know more about my capital city.
+
+**Exploration of Data**  
+Data provided by http://data.denvergov.org
+
+**What we'll do in this post**
+
+* Import the crime.csv data set
+* Format the data
+* Plot the total number of incidents reported by year
+
+Let's dive in!  
+
+**Import the necessary libraries**
+
+```{r results='hide', warning=FALSE, message=FALSE}
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 options("stringsAsFactors" = TRUE)
-```
+```  
+  
+**Load the crime data set provided**  
+It is possible to load the data straight from the URL, however, it's over 80MB in size, so I simply downloaded it. It is updated regularly, so this post may need to be refreshed from time to time.  
 
-
-```{r}
+```{r cache=TRUE}
 ####
 # Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
 # File name: crime.csv
 CWD = getwd()
 data = read.csv(paste(CWD,'/data/crime.csv',sep=''))
 ####
+```  
 
+**Format the data**  
+I added columns for year, month, day and hour into the dataframe in order to simplify life. It takes a bit more time and ram upfront but I prefer to see it that way.  
+
+```{r}
 #Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
 data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
 
 #Create new columns for grouping
-data$year = factor(year(data$date))
-data$month = factor(month(data$date))
-data$day = factor(day(data$date))
-data$hour = factor(hour(data$FIRST_OCCURRENCE_DATE))
+data$year = year(data$date)
+data$month = month(data$date)
+data$day = day(data$date)
+data$hour = hour(data$FIRST_OCCURRENCE_DATE)
 
-head(data)
-```
+print(colnames(data))
+```  
+
+**Basic Plotting**  
+ggplot2 will provide a decent chart to show us the number of incidents each year.   
 
 ```{r}
-##########################
-#Basic exploration of data
-##########################
+#Sum up all incidents IS_CRIME AND IS_TRAFFIC
+maxYear = max(data$year)
+maxMonthYTD = max(data$month[data$year==maxYear])
 
-#Count of lines per year
-ggplot(data,aes(year,fill=month)) + geom_bar()
+df = data %>%
+  group_by(year,month) %>%
+  filter(month < maxMonthYTD) %>%
+  summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
+  arrange(month)
 
-```
+p = ggplot(df)
+p + geom_bar(aes(x = factor(year), weight = incidents)) + ggtitle('Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5))
 
+```  
+![barplotCOLOR](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-1/crime-analysis-denver-part-1-plot1.png)
 
+**Adding Some Color**  
+Looking at the same plot but adding in colors for each month of the year.
+
+```{r}
+#Stack bars in colors to view individual months
+p = ggplot(df,aes(x=factor(year),y=incidents,fill=factor(month)))
+p + geom_bar(stat='identity') + ggtitle('Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5)) + guides(fill = guide_legend(title='Month'))
+```  
+
+![barplotCOLOR](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-1/crime-analysis-denver-part-1-plot2.png)
+  
+**Initial Impressions**
+Having isolated only months that have occurred in each year, we've seen traffic increase each year. The most rapid growth seemed to occur between 2012 - 2014. I'll have to dig into those years in order to see if there's evidence of a change in crime rate or if something else is hiding in the data.
+
+**What I'll do in the next post**
+
+* Dig into the apparent crime rate growth from 2012 - 2014
+* Determine year-over-year differences in crime
+* Look for patterns by location
+* Answer the question: What types of crimes have grown the most in the last 5 years?
