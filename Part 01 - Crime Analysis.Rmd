@@ -84,10 +84,33 @@ p = ggplot(df,aes(x=factor(year),y=incidents,fill=factor(month)))
 p + geom_bar(stat='identity') + ggtitle('Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5)) + guides(fill = guide_legend(title='Month'))
 ```  
 
-![barplotCOLOR](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-1/crime-analysis-denver-part-1-plot2.png)
-  
+![barplotCOLOR](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-1/crime-analysis-denver-part-1-plot2.png)  
+
+**How much is labeled as TRAFFIC or CRIME**  
+Looking at the same plot but separating out IS_TRAFFIC from IS_CRIME
+
+#Stack bars in colors to view individual months  
+
+```{r}
+tmp= data
+tmp$crimeType[tmp$IS_CRIME == 1] = 'Crime'
+tmp$crimeType[tmp$IS_CRIME == 0] = 'Traffic'
+tmp$crimeType = factor(tmp$crimeType) 
+
+df = tmp %>%
+  group_by(year,crimeType) %>%
+  filter(month < maxMonthYTD) %>%
+  summarise(crimeIncidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
+  arrange(year)
+
+p = ggplot(df,aes(x=factor(year),y=crimeIncidents,fill=crimeType))
+p + geom_bar(stat='identity') + ggtitle('Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5)) + guides(fill = guide_legend(title='Incident Type'))
+```  
+
+![barplotCOLOR](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-1/crime-analysis-denver-part-1-plot3.png)
+
 **Initial Impressions**
-Having isolated only months that have occurred in each year, we've seen traffic increase each year. The most rapid growth seemed to occur between 2012 - 2014. I'll have to dig into those years in order to see if there's evidence of a change in crime rate or if something else is hiding in the data.
+Having isolated only months that have occurred in each year, we've seen volume increase most years. The most rapid growth seemed to occur between 2012 - 2014. It appears as if Traffic violations seem to be roughly flat and the growth in crimes is much higher. I'll have to dig into those years in order to see if there's evidence of a change in crime rate or if something else is hiding in the data.
 
 **What I'll do in the next post**
 
@@ -95,3 +118,6 @@ Having isolated only months that have occurred in each year, we've seen traffic 
 * Determine year-over-year differences in crime
 * Look for patterns by location
 * Answer the question: What types of crimes have grown the most in the last 5 years?
+
+My code for this is posted on GitHub:  
+https://github.com/stoltzmaniac/Denver-Crime-Analysis.git
