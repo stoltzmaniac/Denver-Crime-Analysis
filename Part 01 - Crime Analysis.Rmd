@@ -1,0 +1,49 @@
+---
+title: "Crime Analysis - Denver"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+Let's Make some R Notebook come to life!
+
+```{r warnings=FALSE}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+options("stringsAsFactors" = TRUE)
+```
+
+
+```{r}
+####
+# Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
+# File name: crime.csv
+CWD = getwd()
+data = read.csv(paste(CWD,'/data/crime.csv',sep=''))
+####
+
+#Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
+data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
+
+#Create new columns for grouping
+data$year = factor(year(data$date))
+data$month = factor(month(data$date))
+data$day = factor(day(data$date))
+data$hour = factor(hour(data$FIRST_OCCURRENCE_DATE))
+
+head(data)
+```
+
+```{r}
+##########################
+#Basic exploration of data
+##########################
+
+#Count of lines per year
+ggplot(data,aes(year,fill=month)) + geom_bar()
+
+```
+
+
