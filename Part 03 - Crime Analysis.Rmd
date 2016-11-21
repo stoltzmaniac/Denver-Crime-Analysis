@@ -1,0 +1,239 @@
+
+####Getting More Granular  
+
+**Where we're going**  
+In having noticed the crime rates heading up over the last few years, taking a better look seemed more important. I want to first look at "CRIME" before looking into "TRAFFIC" in the data set. It sounds more interesting and I hope the results don't keep me up at night.  
+
+
+**What we'll do in this post**
+
+* Load the csv, format the data
+  * This will all be hidden and can be found in the previous post (Part 1)
+* Look into apparent growth in crime rates from 2012 - 2014
+* We'll focus only on those that fit the "IS_CRIME" definition and not "IS_TRAFFIC"
+
+Let's dive in!  
+
+**Exploration of Data**  
+Data provided by http://data.denvergov.org
+
+**Import the necessary libraries**
+
+```{r results='hide', warning=FALSE, message=FALSE, echo=FALSE}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+options("stringsAsFactors" = TRUE)
+```  
+
+```{r cache=TRUE, echo=FALSE}
+####
+# Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
+# File name: crime.csv
+CWD = getwd()
+data = read.csv(paste(CWD,'/data/crime.csv',sep=''))
+####
+```  
+
+```{r echo=FALSE}
+data.backup=data
+#Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
+data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
+
+#Create new columns for grouping
+data$year = year(data$date)
+data$month = month(data$date)
+data$day = day(data$date)
+data$dayOfWeek <- weekdays(data$date)
+data$hour = hour(data$FIRST_OCCURRENCE_DATE)
+```  
+
+**Looking at Crime Incidents by Year**  
+
+```{r}
+maxYear = max(data$year)
+maxMonthYTD = max(data$month[data$year==maxYear])
+
+data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+df = data %>%
+  group_by(dayOfWeek,year,date) %>%
+  summarise(crime = sum(IS_CRIME), traffic = sum(IS_TRAFFIC), incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
+  arrange(dayOfWeek)
+
+p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+
+p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+
+p = ggplot(df, aes(factor(dayOfWeek),traffic,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+
+df = data %>% 
+  filter(IS_CRIME==1) %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(dayOfWeek,date,year) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(dayOfWeek)
+p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+#head(data)
+
+df = data %>%
+  filter(IS_CRIME==1) %>%
+  group_by(OFFENSE_TYPE_ID) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(desc(incidents))
+
+top20 = df$OFFENSE_TYPE_ID[1:20]
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID %in% top20) %>%
+  group_by(OFFENSE_TYPE_ID,dayOfWeek) %>%
+  summarise(incidents=sum(IS_CRIME))
+
+ggplot(df,aes(dayOfWeek,OFFENSE_TYPE_ID)) + geom_tile(aes(fill=incidents),col='white') + scale_fill_gradient(low = "white", high = "steelblue")
+```
+
+```{r}
+df = data %>% 
+  filter(IS_TRAFFIC==1) %>%
+  filter(month < maxMonthYTD) %>%
+  filter(OFFENSE_TYPE_ID == 'traffic-accident-dui-duid') %>%
+  group_by(dayOfWeek,date,year) %>%
+  summarise(incidents=sum(IS_TRAFFIC)) %>%
+  arrange(dayOfWeek)
+p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+```
+```{r}
+df = data %>%
+  filter(IS_TRAFFIC==1) %>%
+  group_by(OFFENSE_TYPE_ID) %>%
+  summarise(incidents=sum(IS_TRAFFIC)) %>%
+  arrange(desc(incidents))
+
+top20 = df$OFFENSE_TYPE_ID[1:20]
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID %in% top20) %>%
+  group_by(OFFENSE_TYPE_ID,dayOfWeek) %>%
+  summarise(incidents=sum(IS_TRAFFIC))
+
+ggplot(df,aes(dayOfWeek,OFFENSE_TYPE_ID)) + geom_tile(aes(fill=incidents),col='white') + scale_fill_gradient(low = "white", high = "steelblue")
+```
+
+
+
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot1.png)
+
+```{r}
+df = data %>%
+  filter(IS_TRAFFIC==1) %>%
+  filter(year!=max(year(date))) %>%
+  group_by(year) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(year) %>%
+  mutate(year,YoYPercentageChange=round(100*(incidents-lag(incidents))/lag(incidents)),0)
+df = df[!is.na(df$YoYPercentageChange),]
+p = ggplot(df,aes(x=year,y=YoYPercentageChange,label=YoYPercentageChange)) 
+p + geom_bar(stat='identity') + geom_text(fontface='bold',size=6,col='white',vjust=1)+ ggtitle('Crime Percentage Change Year-Over-Year') + xlab('Year') + ylab('YoY Incident % Change') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+![barplotCrimeChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot2.png)
+
+**Observations***
+* Crime rose the most between 2013 and 2012 (39% increase)
+* Crime increased each year after but at a decreasing rate
+* Examine years 2012 - 2014 to see growth changes  
+
+
+**Highest volume of "IS_CRIME" types**  
+Identify the offense by OFFENSE_CATEGORY_ID and exclude months we have not seen so far this year.
+
+```{r}
+#Isolate Years 2012 - 2014
+data = data[data$year <= 2014 & data$year >= 2012,]  
+
+#Sum up all incidents IS_CRIME AND IS_TRAFFIC
+maxYear = max(data$year)
+maxMonthYTD = max(data$month[data$year==maxYear])
+
+#Look into IS_CRIME only
+df = data %>%
+  filter(IS_CRIME==1) %>%
+  group_by(year,OFFENSE_CATEGORY_ID) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(desc(incidents))
+
+p = ggplot(df,aes(x=factor(year),y=incidents,fill=year))
+p + geom_bar(stat='identity') + ggtitle('Crime Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3)
+
+```  
+
+![barplotCrimeCategories](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot3.png)
+
+**Observations**  
+It would appear as if "all-other-crimes" has moved the needle the most between 2012 - 2014. This is not a very specific category. It's also worth noticing that "other-crimes-against-persons" has grown as well. Both of these leads to some speculation that perhaps these vague types of crimes started being reported during this period and perhaps hadn't been documented before.  
+
+* Growth categories: 
+  * "larceny"
+  * "drug-alcohol"
+  * "public-disorder"  
+
+* Declining categories: 
+  * "theft-from-motor-vehicle"
+  * "robbery"
+  * "burglary"  
+
+Many of the other categories have a much lower volume of incidents. Growth is more difficult to see in visualizatoins for these cases.
+
+**Here's a look at growth year-over-year:**
+```{r fig.height=7}
+df2 = df %>%
+  group_by(OFFENSE_CATEGORY_ID) %>%
+  arrange(OFFENSE_CATEGORY_ID,year) %>%
+  mutate(year,YoYchange=round((incidents-lag(incidents))),0) %>% filter(year != 2012)
+
+p = ggplot(df2,aes(x=factor(year),y=YoYchange,fill=year,label=YoYchange))
+p + geom_bar(stat='identity') + ggtitle('Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY Change in Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3) + geom_text(hjust=0.5, size=5,col='red', fontface='bold')
+```
+
+![barplotCrimeCategoryChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot4.png)
+
+**Here's a look at % growth year-over-year:**
+```{r fig.height=7}
+df2 = df %>%
+  group_by(OFFENSE_CATEGORY_ID) %>%
+  arrange(OFFENSE_CATEGORY_ID,year) %>%
+  mutate(year,YoYchange=round(100*((incidents-lag(incidents))/lag(incidents))),0) %>% filter(year != 2012)
+
+p = ggplot(df2,aes(x=factor(year),y=YoYchange,fill=year,label=YoYchange))
+p + geom_bar(stat='identity') + ggtitle('% Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY % Change in Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3) + geom_text(hjust=1,col='red',size=5,fontface='bold')
+```
+
+![barplotCrimeCategoryPercentageChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot5.png)
+
+**Observations**  
+
+* "all-other-crimes" is the outright leader in change in both volume and percentage growth year-over-year with an astonishing 380% increase between 2012 and 2013
+* "drug-alcohol" grew by 173% between 2012 and 2013 but dropped down to only 27% growth the next year
+* "murder" didn't change too much in volume compared to everything else (swinging up 7 and down 10) but was a 19% growth and a 23% decline in 2013 and 2014 respectively  
+
+
+**Final Thoughts (for now)**
+Due to the vague nature of the types of crimes which grew the most, I can't determine exactly what happened in Denver during 2013. In the less vague crimes, "drug-alcohol" saw the largest increase. This was followed by "public-disorder" and perhaps there's a relationship there. My assumption is that one may perhaps cause the other...  
+
+I'm still curious about the seasonality and month-to-month effects. Perhaps certain types of crimes are more common during certain times. I'm also very interested to see if a new population was perhaps added to the mix in 2013. If a certain part of Denver was added in 2013 that would certainly help to explain the situation.  
+
+**What I'll do in the next crime posts**  
+
+* Look for patterns by location
+* Lay out some visualizations on maps
+* Try to identify areas with high volumes of traffic incidents (maybe I can avoid a ticket)
+* Answer the question: What types of crimes have grown the most in the last 5 years?
+
+My code for this is posted on GitHub:  
+https://github.com/stoltzmaniac/Denver-Crime-Analysis.git
