@@ -33,44 +33,54 @@ options("stringsAsFactors" = TRUE)
 # File name: crime.csv
 CWD = getwd()
 data = read.csv(paste(CWD,'/data/crime.csv',sep=''))
+data.backup=data
 ####
 ```  
 
 ```{r echo=FALSE}
-data.backup=data
 #Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
 data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
-
 #Create new columns for grouping
 data$year = year(data$date)
 data$month = month(data$date)
 data$day = day(data$date)
 data$dayOfWeek <- weekdays(data$date)
 data$hour = hour(data$FIRST_OCCURRENCE_DATE)
+data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+maxYear = max(data$year)
+maxMonthYTD = max(data$month[data$year==maxYear])
 ```  
 
 **Looking at Crime Incidents by Year**  
 
 ```{r}
-maxYear = max(data$year)
-maxMonthYTD = max(data$month[data$year==maxYear])
-
-data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
-
 df = data %>%
-  group_by(dayOfWeek,year,date) %>%
+  group_by(dayOfWeek,year,date,OFFENSE_TYPE_ID) %>%
+  filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
   summarise(crime = sum(IS_CRIME), traffic = sum(IS_TRAFFIC), incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
   arrange(dayOfWeek)
 
-p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
+p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=OFFENSE_TYPE_ID,col=OFFENSE_TYPE_ID))
 p + geom_boxplot()
 
-p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
-p + geom_boxplot()
+df = data %>%
+  group_by(year,OFFENSE_TYPE_ID) %>%
+  filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
+  summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
+  arrange(desc(incidents))
 
-p = ggplot(df, aes(factor(dayOfWeek),traffic,fill=factor(year),col=factor(year)))
-p + geom_boxplot()
+p = ggplot(df, aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
+p + geom_bar(stat='identity') + coord_flip()
 
+#p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
+#p + geom_boxplot()
+
+#p = ggplot(df, aes(factor(dayOfWeek),traffic,fill=factor(year),col=factor(year)))
+#p + geom_boxplot()
+
+```
+
+```{r}
 df = data %>% 
   filter(IS_CRIME==1) %>%
   filter(month < maxMonthYTD) %>%
