@@ -1,9 +1,8 @@
 
-####Getting More Granular  
+####Marijuana, Alcohol, and Other Drugs  
 
-**Where we're going**  
-In having noticed the crime rates heading up over the last few years, taking a better look seemed more important. I want to first look at "CRIME" before looking into "TRAFFIC" in the data set. It sounds more interesting and I hope the results don't keep me up at night.  
-
+**Continuing our Exploration of the Data**
+Now having looked a bit deeper into the 
 
 **What we'll do in this post**
 
@@ -24,10 +23,11 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(tidyr)
-options("stringsAsFactors" = TRUE)
+library(ggmap)
+#options("stringsAsFactors" = TRUE)
 ```  
 
-```{r cache=TRUE, echo=FALSE}
+```{r cache=FALSE, echo=FALSE}
 ####
 # Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
 # File name: crime.csv
@@ -38,6 +38,7 @@ data.backup=data
 ```  
 
 ```{r echo=FALSE}
+#data=data.backup
 #Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
 data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
 #Create new columns for grouping
@@ -49,28 +50,56 @@ data$hour = hour(data$FIRST_OCCURRENCE_DATE)
 data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 maxYear = max(data$year)
 maxMonthYTD = max(data$month[data$year==maxYear])
+
+data$DRUG = 'OTHER'
+data$DRUG[grepl('marijuana',data$OFFENSE_TYPE_ID)] = 'MARIJUANA'
+data$DRUG[grepl('alcohol',data$OFFENSE_TYPE_ID)] = 'ALCOHOL'
+data$DRUG[grepl('liquor',data$OFFENSE_TYPE_ID)] = 'ALCOHOL'
+
+data$CRIME_TYPE = 'OTHER'
+data$CRIME_TYPE[grepl('possess',data$OFFENSE_TYPE_ID)] = 'POSSESS'
+data$CRIME_TYPE[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
+
+data$incidents = 1
+
 ```  
 
-**Looking at Crime Incidents by Year**  
+**Looking Into Drugs and Alcohol**  
 
 ```{r}
-df = data %>%
-  group_by(dayOfWeek,year,date,OFFENSE_TYPE_ID) %>%
+top10df = data %>%
+  group_by(OFFENSE_TYPE_ID) %>%
   filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
-  summarise(crime = sum(IS_CRIME), traffic = sum(IS_TRAFFIC), incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
-  arrange(dayOfWeek)
+  summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
+  arrange(desc(incidents))
 
-p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=OFFENSE_TYPE_ID,col=OFFENSE_TYPE_ID))
-p + geom_boxplot()
+top10 = top15df$OFFENSE_TYPE_ID[1:10]
 
 df = data %>%
   group_by(year,OFFENSE_TYPE_ID) %>%
-  filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
+  filter(OFFENSE_TYPE_ID %in% top15)%>%
+  filter(month < maxMonthYTD) %>% 
   summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
   arrange(desc(incidents))
 
 p = ggplot(df, aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
 p + geom_bar(stat='identity') + coord_flip()
+
+df$DRUG = 'OTHER'
+df$DRUG[grepl('marijuana',df$OFFENSE_TYPE_ID)] = 'MARIJUANA'
+df$DRUG[grepl('alcohol',df$OFFENSE_TYPE_ID)] = 'ALCOHOL'
+df$DRUG[grepl('liquor',df$OFFENSE_TYPE_ID)] = 'ALCOHOL'
+
+df$CRIME_TYPE = 'OTHER'
+df$CRIME_TYPE[grepl('possess',df$OFFENSE_TYPE_ID)] = 'POSSESS'
+df$CRIME_TYPE[grepl('sell',df$OFFENSE_TYPE_ID)] = 'SELL'
+
+df2 = df[df$CRIME_TYPE != 'OTHER',]
+
+p = ggplot(df2,aes(x=factor(year),y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
+p + geom_bar(stat='identity') + facet_wrap(~OFFENSE_TYPE_ID) + theme(legend.position="none")
+
+
 
 #p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
 #p + geom_boxplot()
@@ -81,16 +110,122 @@ p + geom_bar(stat='identity') + coord_flip()
 ```
 
 ```{r}
-df = data %>% 
-  filter(IS_CRIME==1) %>%
-  filter(month < maxMonthYTD) %>%
-  group_by(dayOfWeek,date,year) %>%
-  summarise(incidents=sum(IS_CRIME)) %>%
-  arrange(dayOfWeek)
-p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
-p + geom_boxplot()
+#head(data)
+df = data %>%
+  filter(DRUG != 'OTHER') %>%
+  filter(CRIME_TYPE != 'OTHER') %>%
+  filter(month < maxMonthYTD) %>% 
+  spread(CRIME_TYPE,incidents)
+df[is.na(df)] = 0
+
+df2 = df %>%
+  filter(year>=2014) %>%
+  group_by(date) %>%
+  summarise(possess=sum(POSSESS),sell=sum(SELL)) %>%
+  filter(sell > 0)
+df2[is.na(df2)] = 0
+
+head(df2)
+p = ggplot(df2,aes(x=sell,y=possess,col=factor(year(date))))
+p + geom_point()
+
+
+df = data %>%
+  filter(DRUG != 'OTHER') %>%
+  filter(CRIME_TYPE != 'OTHER') %>%
+  filter(year >= 2013) %>%
+  group_by(year,month,CRIME_TYPE) %>%
+  summarise(incidents=sum(incidents))
+df$yearmonth = paste(df$year,df$month, sep="-")
+p = ggplot(df,aes(x=factor(year),y=incidents,col=CRIME_TYPE))
+p + geom_bar(stat='identity')
+
+
+
+```
+
+
+```{r}
+
+denver = get_map('denver',zoom=12)
+denverMap = ggmap(denver)
+denverMap +
+stat_density2d(
+aes(x = GEO_LON, y = GEO_LAT, fill = ..level..,
+alpha = ..level..),
+size = 2, bins = 5, data = data %>% filter(IS_CRIME==1) %>% group_by(GEO_LAT,GEO_LON) %>% summarise(incidents=sum(IS_CRIME)),
+geom = "polygon")
+
+```
+
+```{r}
+
+df = data %>% filter(IS_CRIME == 1) %>% group_by(GEO_LON,GEO_LAT,year) %>% summarise(incidents=sum(IS_CRIME))
+
+denver = get_map('denver',zoom=13,color='bw')
+denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~year)
+
+```
+```{r}
 #head(data)
 
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(GEO_LON,GEO_LAT,hour) %>% 
+  summarise(incidents = sum(IS_TRAFFIC))
+
+#denver = get_map('denver',zoom=13,color='bw')
+#denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+#denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~hour)
+
+
+```
+
+
+```{r}
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(date,dayOfWeek,hour) %>% 
+  summarise(incidents = sum(IS_TRAFFIC))
+
+p = ggplot(df,aes(x=factor(hour),y=incidents,fill=dayOfWeek,col=dayOfWeek))
+p + geom_boxplot()
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(date) %>% summarise(incidents = sum(IS_TRAFFIC))
+ggplot(df,aes(x=date,y=incidents)) + geom_line()       
+unique(data$OFFENSE_TYPE_ID)
+```
+
+
+
+```{r}
+df = data %>% filter(IS_CRIME == 2) %>% filter(filter(IS_OFFENSE_TYPE=='')) %>% group_by(GEO_LON,GEO_LAT,year) %>% summarise(incidents=sum(as.numeric(incidents)))
+
+denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~year)
+```
+
+
+```{r}
+df = data %>% 
+  filter(IS_CRIME==1) %>%
+  filter(OFFENSE_CATEGORY_ID == 'all-other-crimes') %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(OFFENSE_TYPE_ID,year) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(desc(incidents))
+
+p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
+p + geom_bar(stat='identity') + coord_flip()
+```
+
+```{r}
 df = data %>%
   filter(IS_CRIME==1) %>%
   group_by(OFFENSE_TYPE_ID) %>%
@@ -137,94 +272,8 @@ ggplot(df,aes(dayOfWeek,OFFENSE_TYPE_ID)) + geom_tile(aes(fill=incidents),col='w
 
 
 
-![barplotCrime](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot1.png)
-
-```{r}
-df = data %>%
-  filter(IS_TRAFFIC==1) %>%
-  filter(year!=max(year(date))) %>%
-  group_by(year) %>%
-  summarise(incidents=sum(IS_CRIME)) %>%
-  arrange(year) %>%
-  mutate(year,YoYPercentageChange=round(100*(incidents-lag(incidents))/lag(incidents)),0)
-df = df[!is.na(df$YoYPercentageChange),]
-p = ggplot(df,aes(x=year,y=YoYPercentageChange,label=YoYPercentageChange)) 
-p + geom_bar(stat='identity') + geom_text(fontface='bold',size=6,col='white',vjust=1)+ ggtitle('Crime Percentage Change Year-Over-Year') + xlab('Year') + ylab('YoY Incident % Change') + theme(plot.title = element_text(hjust = 0.5))
-```
-
-![barplotCrimeChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot2.png)
-
-**Observations***
-* Crime rose the most between 2013 and 2012 (39% increase)
-* Crime increased each year after but at a decreasing rate
-* Examine years 2012 - 2014 to see growth changes  
 
 
-**Highest volume of "IS_CRIME" types**  
-Identify the offense by OFFENSE_CATEGORY_ID and exclude months we have not seen so far this year.
-
-```{r}
-#Isolate Years 2012 - 2014
-data = data[data$year <= 2014 & data$year >= 2012,]  
-
-#Sum up all incidents IS_CRIME AND IS_TRAFFIC
-maxYear = max(data$year)
-maxMonthYTD = max(data$month[data$year==maxYear])
-
-#Look into IS_CRIME only
-df = data %>%
-  filter(IS_CRIME==1) %>%
-  group_by(year,OFFENSE_CATEGORY_ID) %>%
-  summarise(incidents=sum(IS_CRIME)) %>%
-  arrange(desc(incidents))
-
-p = ggplot(df,aes(x=factor(year),y=incidents,fill=year))
-p + geom_bar(stat='identity') + ggtitle('Crime Incidents Reported by Year') + xlab('Year') + ylab('Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3)
-
-```  
-
-![barplotCrimeCategories](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot3.png)
-
-**Observations**  
-It would appear as if "all-other-crimes" has moved the needle the most between 2012 - 2014. This is not a very specific category. It's also worth noticing that "other-crimes-against-persons" has grown as well. Both of these leads to some speculation that perhaps these vague types of crimes started being reported during this period and perhaps hadn't been documented before.  
-
-* Growth categories: 
-  * "larceny"
-  * "drug-alcohol"
-  * "public-disorder"  
-
-* Declining categories: 
-  * "theft-from-motor-vehicle"
-  * "robbery"
-  * "burglary"  
-
-Many of the other categories have a much lower volume of incidents. Growth is more difficult to see in visualizatoins for these cases.
-
-**Here's a look at growth year-over-year:**
-```{r fig.height=7}
-df2 = df %>%
-  group_by(OFFENSE_CATEGORY_ID) %>%
-  arrange(OFFENSE_CATEGORY_ID,year) %>%
-  mutate(year,YoYchange=round((incidents-lag(incidents))),0) %>% filter(year != 2012)
-
-p = ggplot(df2,aes(x=factor(year),y=YoYchange,fill=year,label=YoYchange))
-p + geom_bar(stat='identity') + ggtitle('Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY Change in Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3) + geom_text(hjust=0.5, size=5,col='red', fontface='bold')
-```
-
-![barplotCrimeCategoryChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot4.png)
-
-**Here's a look at % growth year-over-year:**
-```{r fig.height=7}
-df2 = df %>%
-  group_by(OFFENSE_CATEGORY_ID) %>%
-  arrange(OFFENSE_CATEGORY_ID,year) %>%
-  mutate(year,YoYchange=round(100*((incidents-lag(incidents))/lag(incidents))),0) %>% filter(year != 2012)
-
-p = ggplot(df2,aes(x=factor(year),y=YoYchange,fill=year,label=YoYchange))
-p + geom_bar(stat='identity') + ggtitle('% Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY % Change in Incidents') + theme(plot.title = element_text(hjust = 0.5),legend.position = 'none') + guides(fill = guide_legend(title='Year')) + coord_flip() + facet_wrap(~OFFENSE_CATEGORY_ID,ncol=3) + geom_text(hjust=1,col='red',size=5,fontface='bold')
-```
-
-![barplotCrimeCategoryPercentageChange](http://stoltzmaniac.com/content/images/2016/11/crime-analysis-denver-part-2/crime-analysis-denver-part-2-plot5.png)
 
 **Observations**  
 
