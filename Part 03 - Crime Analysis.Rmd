@@ -77,7 +77,7 @@ top10 = top15df$OFFENSE_TYPE_ID[1:10]
 
 df = data %>%
   group_by(year,OFFENSE_TYPE_ID) %>%
-  filter(OFFENSE_TYPE_ID %in% top15)%>%
+  filter(OFFENSE_TYPE_ID %in% top10)%>%
   filter(month < maxMonthYTD) %>% 
   summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
   arrange(desc(incidents))
@@ -85,22 +85,22 @@ df = data %>%
 p = ggplot(df, aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
 p + geom_bar(stat='identity') + coord_flip()
 
-df$DRUG = 'OTHER'
-df$DRUG[grepl('marijuana',df$OFFENSE_TYPE_ID)] = 'MARIJUANA'
-df$DRUG[grepl('alcohol',df$OFFENSE_TYPE_ID)] = 'ALCOHOL'
-df$DRUG[grepl('liquor',df$OFFENSE_TYPE_ID)] = 'ALCOHOL'
-
-df$CRIME_TYPE = 'OTHER'
-df$CRIME_TYPE[grepl('possess',df$OFFENSE_TYPE_ID)] = 'POSSESS'
-df$CRIME_TYPE[grepl('sell',df$OFFENSE_TYPE_ID)] = 'SELL'
-
-df2 = df[df$CRIME_TYPE != 'OTHER',]
-
-p = ggplot(df2,aes(x=factor(year),y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
+p = ggplot(data %>% filter(CRIME_TYPE != 'OTHER'),aes(x=factor(year),y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
 p + geom_bar(stat='identity') + facet_wrap(~OFFENSE_TYPE_ID) + theme(legend.position="none")
 
+p = ggplot(data %>% filter(CRIME_TYPE != 'OTHER'),aes(x=factor(OFFENSE_TYPE_ID),y=incidents,col=year,fill=year))
+p + geom_bar(stat='identity') + theme(legend.position="none") + coord_flip()
 
+df = data %>%
+  filter(month < maxMonthYTD) %>%
+  filter(year >= 2014) %>%
+  filter(NEIGHBORHOOD_ID != '') %>%
+  group_by(year,NEIGHBORHOOD_ID) %>%
+  summarise(incidents = sum(incidents)) %>% 
+  arrange(desc(incidents))
 
+p = ggplot(df, aes(x=reorder(NEIGHBORHOOD_ID,-incidents),y=incidents,group=factor(year),col=factor(year)))
+p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1))
 #p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
 #p + geom_boxplot()
 
