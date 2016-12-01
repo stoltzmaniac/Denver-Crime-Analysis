@@ -24,6 +24,7 @@ library(lubridate)
 library(ggplot2)
 library(tidyr)
 library(ggmap)
+library(car)
 #options("stringsAsFactors" = TRUE)
 ```  
 
@@ -51,45 +52,31 @@ data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday",
 maxYear = max(data$year)
 maxMonthYTD = max(data$month[data$year==maxYear])
 
-data$DRUG = 'OTHER'
-data$DRUG[grepl('marijuana',data$OFFENSE_TYPE_ID)] = 'MARIJUANA'
-data$DRUG[grepl('alcohol',data$OFFENSE_TYPE_ID)] = 'ALCOHOL'
-data$DRUG[grepl('liquor',data$OFFENSE_TYPE_ID)] = 'ALCOHOL'
+data$DRUG = 'NA'
+data$DRUG[grepl('drug',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+data$DRUG[grepl('alcohol',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+data$DRUG[grepl('liquor',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+data$DRUG = gsub("^.*?-",'',data$OFFENSE_CATEGORY_ID)
+data$DRUG = gsub("-^.*?",'-',data$DRUG)
+
+  
 
 data$CRIME_TYPE = 'OTHER'
-data$CRIME_TYPE[grepl('possess',data$OFFENSE_TYPE_ID)] = 'POSSESS'
+data$CRIME_TYPE[grepl('poss',data$OFFENSE_TYPE_ID)] = 'POSs'
 data$CRIME_TYPE[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
 
 data$incidents = 1
 
 ```  
+```{r}
+
+```
 
 **Looking Into Drugs and Alcohol**  
 
 ```{r}
-top10df = data %>%
-  group_by(OFFENSE_TYPE_ID) %>%
-  filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
-  summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
-  arrange(desc(incidents))
-head(top10df)
-top10 = top10df$OFFENSE_TYPE_ID[1:10]
-
-df = data %>%
-  group_by(year,OFFENSE_TYPE_ID) %>%
-  filter(OFFENSE_TYPE_ID %in% top10)%>%
-  filter(month < maxMonthYTD) %>% 
-  summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
-  arrange(desc(incidents))
-
-p = ggplot(df, aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
-p + geom_bar(stat='identity') + coord_flip()
-
-p = ggplot(data %>% filter(CRIME_TYPE != 'OTHER'),aes(x=factor(year),y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
-p + geom_bar(stat='identity') + facet_wrap(~OFFENSE_TYPE_ID) + theme(legend.position="none")
-
-p = ggplot(data %>% filter(CRIME_TYPE != 'OTHER'),aes(x=factor(OFFENSE_TYPE_ID),y=incidents,col=year,fill=year))
-p + geom_bar(stat='identity') + theme(legend.position="none") + coord_flip()
+#Top "n" neighborhoods
+n = 15
 
 df = data %>%
   filter(month < maxMonthYTD) %>%
@@ -97,50 +84,40 @@ df = data %>%
   filter(NEIGHBORHOOD_ID != '') %>%
   group_by(year,NEIGHBORHOOD_ID) %>%
   summarise(incidents = sum(incidents)) %>% 
-  arrange(desc(incidents))
+  arrange(desc(incidents)) %>%
+  top_n(n)
 
 p = ggplot(df, aes(x=reorder(NEIGHBORHOOD_ID,-incidents),y=incidents,group=factor(year),col=factor(year)))
-p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1))
-#p = ggplot(df, aes(factor(dayOfWeek),crime,fill=factor(year),col=factor(year)))
-#p + geom_boxplot()
-
-#p = ggplot(df, aes(factor(dayOfWeek),traffic,fill=factor(year),col=factor(year)))
-#p + geom_boxplot()
+p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1)) + ggtitle(paste("Annual Incidents Reported in Top ", as.character(n), " Neighborhoods",sep="")) + labs(x = "Neighborhood")
 
 ```
 
 ```{r}
-#head(data)
 df = data %>%
-  filter(DRUG != 'OTHER') %>%
+  filter(NEIGHBORHOOD_ID == 'five-points') %>%
+  filter(year >= 2014) %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(year,OFFENSE_TYPE_ID) %>%
+  summarise(incidents = sum(incidents)) %>%
+  arrange(desc(incidents)) %>%
+  top_n(n)
+
+p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,group=factor(year),col=factor(year),fill=factor(year)))
+p + geom_bar(stat='identity',position='dodge') + coord_flip() + ggtitle(paste("Top", as.character(n), " Crime Types in Five Points",sep="")) + labs(x = "Crime Type")
+```
+
+```{r}
+df = data %>%
   filter(CRIME_TYPE != 'OTHER') %>%
-  filter(month < maxMonthYTD) %>% 
-  spread(CRIME_TYPE,incidents)
+  filter(year >= 2014) %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(DRUG,year,OFFENSE_CATEGORY_ID,OFFENSE_TYPE_ID) %>%
+  summarise(incidents = sum(incidents))
+df[df$DRUG == 'OTHER',]
 df[is.na(df)] = 0
 
-df2 = df %>%
-  filter(year>=2014) %>%
-  group_by(date) %>%
-  summarise(possess=sum(POSSESS),sell=sum(SELL)) %>%
-  filter(sell > 0)
-df2[is.na(df2)] = 0
-
-head(df2)
-p = ggplot(df2,aes(x=sell,y=possess,col=factor(year(date))))
-p + geom_point()
-
-
-df = data %>%
-  filter(DRUG != 'OTHER') %>%
-  filter(CRIME_TYPE != 'OTHER') %>%
-  filter(year >= 2013) %>%
-  group_by(year,month,CRIME_TYPE) %>%
-  summarise(incidents=sum(incidents))
-df$yearmonth = paste(df$year,df$month, sep="-")
-p = ggplot(df,aes(x=factor(year),y=incidents,col=CRIME_TYPE))
-p + geom_bar(stat='identity')
-
-
+p = ggplot(df,aes(x=reorder(DRUG,-incidents),y=incidents,group=factor(year),col=factor(year)))
+p + geom_line() + geom_point()
 
 ```
 
