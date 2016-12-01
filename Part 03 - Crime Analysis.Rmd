@@ -52,19 +52,18 @@ data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday",
 maxYear = max(data$year)
 maxMonthYTD = max(data$month[data$year==maxYear])
 
-data$DRUG = 'NA'
-data$DRUG[grepl('drug',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
-data$DRUG[grepl('alcohol',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
-data$DRUG[grepl('liquor',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
-data$DRUG = gsub("^.*?-",'',data$OFFENSE_CATEGORY_ID)
-data$DRUG = gsub("-^.*?",'-',data$DRUG)
 
-  
+#data$DRUG = gsub("(^.*?)-",'',data$OFFENSE_TYPE_ID)
+#data$DRUG[data$OFFENSE_CATEGORY_ID != 'drug-alcohol'] = 'NA'
 
-data$CRIME_TYPE = 'OTHER'
-data$CRIME_TYPE[grepl('poss',data$OFFENSE_TYPE_ID)] = 'POSs'
-data$CRIME_TYPE[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
+#data$DRUG[grepl('drug',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+#data$DRUG[grepl('alcohol',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+#data$DRUG[grepl('liquor',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
 
+data$DRUG_OFFENSE_CATEGORY = 'OTHER'
+data$DRUG_OFFENSE_CATEGORY[grepl('poss',data$OFFENSE_TYPE_ID)] = 'POSS'
+data$DRUG_OFFENSE_CATEGORY[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
+head(data[data$DRUG_OFFENSE_CATEGORY!='OTHER',])
 data$incidents = 1
 
 ```  
@@ -107,18 +106,53 @@ p + geom_bar(stat='identity',position='dodge') + coord_flip() + ggtitle(paste("T
 ```
 
 ```{r}
-df = data %>%
-  filter(CRIME_TYPE != 'OTHER') %>%
+topCrimes = data %>%
+  filter(OFFENSE_CATEGORY_ID == 'drug-alcohol') %>%
   filter(year >= 2014) %>%
   filter(month < maxMonthYTD) %>%
-  group_by(DRUG,year,OFFENSE_CATEGORY_ID,OFFENSE_TYPE_ID) %>%
+  group_by(OFFENSE_TYPE_ID) %>%
+  summarise(incidents = sum(incidents)) %>%
+  arrange(desc(incidents)) %>%
+  top_n(15)
+topCrimes = topCrimes$OFFENSE_TYPE_ID
+
+df = data %>%
+  filter(OFFENSE_CATEGORY_ID == 'drug-alcohol') %>%
+  filter(OFFENSE_TYPE_ID %in% topCrimes) %>%
+  filter(year >= 2014) %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(OFFENSE_TYPE_ID,year) %>%
   summarise(incidents = sum(incidents))
-df[df$DRUG == 'OTHER',]
-df[is.na(df)] = 0
 
-p = ggplot(df,aes(x=reorder(DRUG,-incidents),y=incidents,group=factor(year),col=factor(year)))
-p + geom_line() + geom_point()
+p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,-incidents),y=incidents,group=factor(year),col=factor(year)))
+p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1)) + ggtitle(paste("Annual Incidents Reported")) + labs(x = "Neighborhood")
 
+```
+
+
+```{r}
+df = data %>%
+  filter(year >= 2014) %>%
+  filter(grepl('marijuana',OFFENSE_TYPE_ID)) %>%
+  group_by(OFFENSE_TYPE_ID,year,month) %>%
+  summarise(incidents = sum(incidents))
+df$yearMonth = as.Date(paste(as.character(df$year),"-",as.character(df$month),"-01",sep=''))
+p = ggplot(df,aes(x=yearMonth,y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
+p + geom_line() + theme(legend.position = 'bottom',legend.title=element_blank()) + ggtitle(expression(atop(paste("Incidents With 'Marijuana' Classification"),atop(italic('Note Spikes in Posession of Marijuana on April 20th (aka 4/20) Each Year'),"")))) + labs(x='Year by Month')
+#420 is a huge day...
+
+```
+
+```{r}
+df = data %>%
+  filter(year >= 2014) %>%
+  filter(month <= maxMonthYTD) %>%
+  filter(grepl('marijuana',OFFENSE_TYPE_ID)) %>%
+  group_by(OFFENSE_TYPE_ID,year) %>%
+  summarise(incidents = sum(incidents))
+
+p = ggplot(df,aes(x=year,y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID))
+p + geom_line() + theme(legend.position = 'bottom',legend.title=element_blank()) + ggtitle(expression(atop(paste("Incidents With 'Marijuana' Classification"),atop(italic('Note Spikes in Posession of Marijuana on April 20th (aka 4/20) Each Year'),"")))) + labs(x='Year by Month')
 ```
 
 
