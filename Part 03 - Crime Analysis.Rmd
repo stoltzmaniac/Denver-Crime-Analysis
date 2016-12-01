@@ -72,8 +72,8 @@ top10df = data %>%
   filter(OFFENSE_CATEGORY_ID=='drug-alcohol')%>%
   summarise(incidents = sum(IS_CRIME) + sum(IS_TRAFFIC)) %>%
   arrange(desc(incidents))
-
-top10 = top15df$OFFENSE_TYPE_ID[1:10]
+head(top10df)
+top10 = top10df$OFFENSE_TYPE_ID[1:10]
 
 df = data %>%
   group_by(year,OFFENSE_TYPE_ID) %>%
