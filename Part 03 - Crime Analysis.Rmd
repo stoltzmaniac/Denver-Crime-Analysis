@@ -24,6 +24,7 @@ library(lubridate)
 library(ggplot2)
 library(tidyr)
 library(ggmap)
+library(car)
 #options("stringsAsFactors" = TRUE)
 ```  
 
@@ -63,6 +64,10 @@ data$CRIME_TYPE[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
 data$incidents = 1
 
 ```  
+```{r}
+head(data)
+df = data %>%
+```
 
 **Looking Into Drugs and Alcohol**  
 
@@ -140,6 +145,32 @@ df$yearmonth = paste(df$year,df$month, sep="-")
 p = ggplot(df,aes(x=factor(year),y=incidents,col=CRIME_TYPE))
 p + geom_bar(stat='identity')
 
+
+top10categories = data %>%
+  group_by(OFFENSE_CATEGORY_ID) %>%
+  summarise(incidents = sum(incidents)) %>%
+  arrange(desc(incidents))
+top10categories = top10categories$OFFENSE_CATEGORY_ID[1:nrow(top10categories)]
+
+df = data %>%
+  filter(year >= 2013) %>%
+  filter(OFFENSE_CATEGORY_ID %in% top10categories) %>%
+  group_by(OFFENSE_CATEGORY_ID,year,month) %>%
+  summarise(incidents = sum(incidents)) %>%
+  spread(OFFENSE_CATEGORY_ID,incidents)
+
+df[is.na(df)] = 0
+df$year = NULL
+df$month = NULL
+
+library(corrgram)
+corrgram(df, order=TRUE, lower.panel=panel.shade,
+  upper.panel=panel.pie, text.panel=panel.txt,
+  main="Corr Plot")
+#
+```
+
+```{r}
 
 
 ```
