@@ -26,7 +26,7 @@ library(tidyr)
 #options("stringsAsFactors" = TRUE)
 ```  
 
-```{r cache=TRUE, echo=FALSE}
+```{r cache=FALSE, echo=FALSE}
 ####
 # Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
 # File name: crime.csv

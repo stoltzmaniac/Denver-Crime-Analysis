@@ -1,0 +1,253 @@
+
+####Marijuana, Alcohol, and Other Drugs  
+
+**Continuing our Exploration of the Data**
+Now having looked a bit deeper into the 
+
+**What we'll do in this post**
+
+* Load the csv, format the data
+  * This will all be hidden and can be found in the previous post (Part 1)
+* Look into apparent growth in crime rates from 2012 - 2014
+* We'll focus only on those that fit the "IS_CRIME" definition and not "IS_TRAFFIC"
+
+Let's dive in!  
+
+**Exploration of Data**  
+Data provided by http://data.denvergov.org
+
+**Import the necessary libraries**
+
+```{r results='hide', warning=FALSE, message=FALSE, echo=FALSE}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+library(ggmap)
+library(car)
+#options("stringsAsFactors" = TRUE)
+```  
+
+```{r cache=FALSE, echo=FALSE}
+####
+# Data from: http://data.denvergov.org/dataset/city-and-county-of-denver-crime
+# File name: crime.csv
+CWD = getwd()
+data = read.csv(paste(CWD,'/data/crime.csv',sep=''))
+data.backup=data
+####
+```  
+
+```{r echo=FALSE}
+#data=data.backup
+#Format FIRST_OCCURRENCE_DATE as.Date and use as crime date (for now)
+data$date = as.Date(data$FIRST_OCCURRENCE_DATE)
+#Create new columns for grouping
+data$year = year(data$date)
+data$month = month(data$date)
+data$day = day(data$date)
+data$dayOfWeek <- weekdays(data$date)
+data$hour = hour(data$FIRST_OCCURRENCE_DATE)
+data$dayOfWeek = factor(data$dayOfWeek, levels= c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+maxYear = max(data$year)
+maxMonthYTD = max(data$month[data$year==maxYear])
+
+
+#data$DRUG = gsub("(^.*?)-",'',data$OFFENSE_TYPE_ID)
+#data$DRUG[data$OFFENSE_CATEGORY_ID != 'drug-alcohol'] = 'NA'
+
+#data$DRUG[grepl('drug',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+#data$DRUG[grepl('alcohol',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+#data$DRUG[grepl('liquor',data$OFFENSE_CATEGORY_ID)] = 'DRUG-ALCOHOL-OTHER'
+
+data$DRUG_OFFENSE_CATEGORY = 'OTHER'
+data$DRUG_OFFENSE_CATEGORY[grepl('poss',data$OFFENSE_TYPE_ID)] = 'POSS'
+data$DRUG_OFFENSE_CATEGORY[grepl('sell',data$OFFENSE_TYPE_ID)] = 'SELL'
+
+data$incidents = 1
+
+```  
+
+
+```{r}
+
+denver = get_map('denver',zoom=12)
+denverMap = ggmap(denver)
+denverMap +
+stat_density2d(
+aes(x = GEO_LON, y = GEO_LAT, fill = ..level..,
+alpha = ..level..),
+size = 2, bins = 5, data = data %>% filter(IS_CRIME==1) %>% group_by(GEO_LAT,GEO_LON) %>% summarise(incidents=sum(IS_CRIME)),
+geom = "polygon")
+
+```
+
+```{r}
+
+df = data %>% filter(IS_CRIME == 1) %>% group_by(GEO_LON,GEO_LAT,year) %>% summarise(incidents=sum(IS_CRIME))
+
+denver = get_map('denver',zoom=13,color='bw')
+denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~year)
+
+```
+```{r}
+#head(data)
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(GEO_LON,GEO_LAT,hour) %>% 
+  summarise(incidents = sum(IS_TRAFFIC))
+
+#denver = get_map('denver',zoom=13,color='bw')
+#denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+#denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~hour)
+
+
+```
+
+
+```{r}
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(date,dayOfWeek,hour) %>% 
+  summarise(incidents = sum(IS_TRAFFIC))
+
+p = ggplot(df,aes(x=factor(hour),y=incidents,fill=dayOfWeek,col=dayOfWeek))
+p + geom_boxplot()
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID=='traffic-accident-dui-duid') %>% 
+  group_by(date) %>% summarise(incidents = sum(IS_TRAFFIC))
+ggplot(df,aes(x=date,y=incidents)) + geom_line()       
+unique(data$OFFENSE_TYPE_ID)
+```
+
+
+
+```{r}
+df = data %>% filter(IS_CRIME == 2) %>% filter(filter(IS_OFFENSE_TYPE=='')) %>% group_by(GEO_LON,GEO_LAT,year) %>% summarise(incidents=sum(as.numeric(incidents)))
+
+denverMap = ggmap(denver,base_layer=ggplot(aes(x=GEO_LON,y=GEO_LAT),data=df))
+
+denverMap + stat_density2d(aes(x=GEO_LON,y=GEO_LAT, fill = ..level.. , alpha = ..level..), bins=5,geom='polygon',data=df) + scale_fill_gradient(low='black',high='red') + facet_wrap(~year)
+```
+
+
+```{r}
+df = data %>% 
+  filter(IS_CRIME==1) %>%
+  filter(OFFENSE_CATEGORY_ID == 'all-other-crimes') %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(OFFENSE_TYPE_ID,year) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(desc(incidents))
+
+p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,fill=factor(year),col=factor(year)))
+p + geom_bar(stat='identity') + coord_flip()
+```
+
+```{r}
+df = data %>%
+  filter(IS_CRIME==1) %>%
+  group_by(OFFENSE_TYPE_ID) %>%
+  summarise(incidents=sum(IS_CRIME)) %>%
+  arrange(desc(incidents))
+
+top20 = df$OFFENSE_TYPE_ID[1:20]
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID %in% top20) %>%
+  group_by(OFFENSE_TYPE_ID,dayOfWeek) %>%
+  summarise(incidents=sum(IS_CRIME))
+
+ggplot(df,aes(dayOfWeek,OFFENSE_TYPE_ID)) + geom_tile(aes(fill=incidents),col='white') + scale_fill_gradient(low = "white", high = "steelblue")
+```
+
+```{r}
+df = data %>% 
+  filter(IS_TRAFFIC==1) %>%
+  filter(month < maxMonthYTD) %>%
+  filter(OFFENSE_TYPE_ID == 'traffic-accident-dui-duid') %>%
+  group_by(dayOfWeek,date,year) %>%
+  summarise(incidents=sum(IS_TRAFFIC)) %>%
+  arrange(dayOfWeek)
+p = ggplot(df, aes(factor(dayOfWeek),incidents,fill=factor(year),col=factor(year)))
+p + geom_boxplot()
+```
+```{r}
+df = data %>%
+  filter(IS_TRAFFIC==1) %>%
+  group_by(OFFENSE_TYPE_ID) %>%
+  summarise(incidents=sum(IS_TRAFFIC)) %>%
+  arrange(desc(incidents))
+
+top20 = df$OFFENSE_TYPE_ID[1:20]
+
+df = data %>%
+  filter(OFFENSE_TYPE_ID %in% top20) %>%
+  group_by(OFFENSE_TYPE_ID,dayOfWeek) %>%
+  summarise(incidents=sum(IS_TRAFFIC))
+
+ggplot(df,aes(dayOfWeek,OFFENSE_TYPE_ID)) + geom_tile(aes(fill=incidents),col='white') + scale_fill_gradient(low = "white", high = "steelblue")
+```
+
+
+
+```{r}
+#Top "n" neighborhoods
+n = 15
+
+df = data %>%
+  filter(month < maxMonthYTD) %>%
+  filter(year >= 2014) %>%
+  filter(NEIGHBORHOOD_ID != '') %>%
+  group_by(year,NEIGHBORHOOD_ID) %>%
+  summarise(incidents = sum(incidents)) %>% 
+  arrange(desc(incidents)) %>%
+  top_n(n)
+
+p = ggplot(df, aes(x=reorder(NEIGHBORHOOD_ID,-incidents),y=incidents,group=factor(year),col=factor(year)))
+p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1)) + ggtitle(paste("Annual Incidents Reported in Top ", as.character(n), " Neighborhoods",sep="")) + labs(x = "Neighborhood")
+
+```
+
+```{r}
+df = data %>%
+  filter(NEIGHBORHOOD_ID == 'five-points') %>%
+  filter(year >= 2014) %>%
+  filter(month < maxMonthYTD) %>%
+  group_by(year,OFFENSE_TYPE_ID) %>%
+  summarise(incidents = sum(incidents)) %>%
+  arrange(desc(incidents)) %>%
+  top_n(n)
+
+p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,incidents),y=incidents,group=factor(year),col=factor(year),fill=factor(year)))
+p + geom_bar(stat='identity',position='dodge') + coord_flip() + ggtitle(paste("Top", as.character(n), " Crime Types in Five Points",sep="")) + labs(x = "Crime Type")
+```
+
+
+
+**Observations**  
+
+* "all-other-crimes" is the outright leader in change in both volume and percentage growth year-over-year with an astonishing 380% increase between 2012 and 2013
+* "drug-alcohol" grew by 173% between 2012 and 2013 but dropped down to only 27% growth the next year
+* "murder" didn't change too much in volume compared to everything else (swinging up 7 and down 10) but was a 19% growth and a 23% decline in 2013 and 2014 respectively  
+
+
+**Final Thoughts (for now)**
+Due to the vague nature of the types of crimes which grew the most, I can't determine exactly what happened in Denver during 2013. In the less vague crimes, "drug-alcohol" saw the largest increase. This was followed by "public-disorder" and perhaps there's a relationship there. My assumption is that one may perhaps cause the other...  
+
+I'm still curious about the seasonality and month-to-month effects. Perhaps certain types of crimes are more common during certain times. I'm also very interested to see if a new population was perhaps added to the mix in 2013. If a certain part of Denver was added in 2013 that would certainly help to explain the situation.  
+
+**What I'll do in the next crime posts**  
+
+* Look for patterns by location
+* Lay out some visualizations on maps
+* Try to identify areas with high volumes of traffic incidents (maybe I can avoid a ticket)
+* Answer the question: What types of crimes have grown the most in the last 5 years?
+
+My code for this is posted on GitHub:  
+https://github.com/stoltzmaniac/Denver-Crime-Analysis.git
