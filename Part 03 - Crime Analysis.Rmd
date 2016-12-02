@@ -81,6 +81,7 @@ p = ggplot(df,aes(x=reorder(OFFENSE_TYPE_ID,-incidents),y=incidents,group=factor
 p + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45,hjust=1)) + ggtitle(paste("Annual Incidents Reported")) + labs(x = "OFFENSE CATEGORY")
 
 ```
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-4-1.png)
   
   
 **Observations**
@@ -105,6 +106,8 @@ p = ggplot(df,aes(x=yearMonth,y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_
 p + geom_line() + theme(legend.position = 'bottom',legend.title=element_blank()) + ggtitle(expression(atop(paste("Incidents With 'Marijuana' Classification"),atop(italic('Note Spikes in Posession of Marijuana on April 20th of Each Year and Sharp Drop-off in 2016'),"")))) + labs(x='Year by Month')
 
 ```
+
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-5-1.png)
 
 **Observations**  
 
@@ -132,7 +135,9 @@ df2[is.na(df2)] = 0
 p = ggplot(df2,aes(x=factor(year),y=YoYchange,group=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_ID,label=YoYchange))
 p + geom_bar(stat='identity',position='dodge') + ggtitle('% Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY % Change in Incidents') + theme(plot.title = element_text(hjust = 0.5)) + guides(fill = guide_legend(title='Year')) + geom_text(position = position_dodge(width=1),col='black',size=5,fontface='bold')
 ```
-  
+ 
+ 
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-6-1.png) 
   
 **Observations**  
 
@@ -159,6 +164,7 @@ p + geom_line() + theme(legend.position = 'right',legend.title=element_blank()) 
 
 ```
 
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-7-1.png)
 
 **Observations**  
 
@@ -180,6 +186,7 @@ p = ggplot(df,aes(x=yearMonth,y=incidents,col=OFFENSE_TYPE_ID,fill=OFFENSE_TYPE_
 p + geom_line() + theme(legend.position = 'bottom',legend.title=element_blank()) + ggtitle(expression(atop(paste("Incidents With 'Methampetamine' Classification"),atop(italic('Note Posession Increasing Much Faster Than Selling'),"")))) + labs(x='Year by Month')
 ```
   
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-8-1.png)
 
 **Observations**  
 
@@ -201,6 +208,7 @@ p = ggplot(df2,aes(x=factor(year),y=YoYchange,group=OFFENSE_TYPE_ID,fill=OFFENSE
 p + geom_bar(stat='identity',position='dodge') + ggtitle('% Change in Crime Incidents vs Previous Year') + xlab('Year') + ylab('YoY % Change in Incidents') + theme(plot.title = element_text(hjust = 0.5)) + guides(fill = guide_legend(title='Year')) + geom_text(position = position_dodge(width=1),col='black',size=5,fontface='bold')
 ```
 
+![barplotCrime](http://stoltzmaniac.com/content/images/2016/12/crime-analysis-denver-part-3/unnamed-chunk-9-1.png)
 
 **Observations**  
 
