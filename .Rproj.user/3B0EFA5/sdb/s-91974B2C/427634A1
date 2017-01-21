@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "shinyUI(fluidPage(\n  titlePanel(\"Denver Crime Data\"),\n  \n  sidebarLayout(\n    sidebarPanel(\n      helpText(\"Create demographic maps with \n        information from the 2010 US Census.\"),\n      \n      selectInput(\"var\", \n                  label = \"Choose a variable to display\",\n                  choices = outp,\n                  selected = ),\n      \n      sliderInput(\"range\", \n                  label = \"Range of interest:\",\n                  min = 0, max = 100, value = c(0, 100))\n    ),\n    \n    mainPanel(plotOutput(\"chart\"))\n  )\n))",
+    "created" : 1485037825865.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3268899439",
+    "id" : "427634A1",
+    "lastKnownWriteTime" : 1485042060,
+    "last_content_update" : 1485042060667,
+    "path" : "~/Documents/GitHub/Denver-Crime-Analysis/shinyApp/ui.R",
+    "project_path" : "shinyApp/ui.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

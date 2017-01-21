@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "library(ggmap)\nlibrary(ggplot2)\nlibrary(zipcode)\nlibrary(choroplethrMaps)\nlibrary(choroplethr)\nlibrary(dplyr)\n#Data from https://catalog.data.gov/dataset/healthcare-associated-infections-hospital-3ca5e\n#TheÂ Healthcare-Associated Infection (HAI)Â measures - provider data. These measures are developed byÂ Centers for Disease Control and Prevention (CDC)Â and collected through theÂ National Healthcare Safety Network (NHSN). They provide information on infections that occur while the patient is in the hospital. These infections can be related to devices, such as central lines and urinary catheters, or spread from patient to patient after contact with an infected person or surface. Many healthcare associated infections can be prevented when the hospitals useÂ CDC-recommended infection control steps.\n\ndata = read.csv('./Infections/data/Healthcare_Associated_Infections_-_Hospital.csv')\n\ndata$zip = clean.zipcodes(data$ZIP.Code)\ndata(zipcode)\ndata=merge(data,zipcode,by.x=\"zip\",by.y=\"zip\")\n\npMap = ggmap(get_map(location = \"United States\",\n              zoom=4,\n              maptype = 'terrain',\n              color = \"bw\")) \n  \npMap +\n  geom_point(data=data %>% \n               filter(Compared.to.National != 'Not Available') %>%\n               filter(Compared.to.National != 'No Different than National Benchmark'), \n             aes(x=longitude,\n                 y=latitude,\n                 color=Compared.to.National),\n             alpha=0.2)\n\ndata$State = factor(data$State)\ncolsList = unique(data$Compared.to.National)\nlibrary(tidyr)\nlibrary(reshape2)\n# df = dcast(\n#   data %>%\n#   group_by(State,Compared.to.National) %>%\n#   summarise(Volume = n()),\n#   State~Compared.to.National,\n#   fun.aggregate=sum,\n#   value.var='Volume'\n# )\n\np = ggplot(data,\n           aes(x=State,fill=Compared.to.National))\np + geom_bar(position='fill') + coord_flip()\n\n\ndf = data %>%\n  group_by(State,Compared.to.National) %>%\n  summarise(Volume = n()) %>%\n  filter(Compared.to.National != 'Not Available') %>%\n  mutate(VolPct = Volume/sum(Volume)) %>%\n  arrange(desc(Volume))\n\np = ggplot(df,aes(x=reorder(State,Volume),\n                  y=VolPct,\n                  fill=Compared.to.National)) \np + geom_bar(stat='identity') + coord_flip()\n\n",
+    "created" : 1485040669930.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2752213238",
+    "id" : "E80BB2CB",
+    "lastKnownWriteTime" : 1485040915,
+    "last_content_update" : 1485040915,
+    "path" : "~/Documents/GitHub/Medicare/Infections/draft_explore.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

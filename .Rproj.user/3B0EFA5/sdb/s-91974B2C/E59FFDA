@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(RSQLite)\nlibrary(dplyr)\nlibrary(lubridate)\nlibrary(ggmap)\n\ncon = dbConnect(RSQLite::SQLite(),dbname='crime.sqlite')\nrs = dbSendQuery(con, \"SELECT * FROM crime\") \ndata = dbFetch(rs)\ndata$date = as.Date(data$REPORTED_DATE)\ndata$year = year(data$date)\ndata$month = month(data$date)\ndata$day = day(data$date)\ndata$hour = hour(data$REPORTED_DATE)\n\ndf = data %>%\n  select(date,year,month,day,hour,\n         OFFENSE_TYPE_ID,OFFENSE_CATEGORY_ID,\n         GEO_LAT,GEO_LON,NEIGHBORHOOD_ID)\n\nrm(data)\n\npMap = ggmap(get_map(location = \"Denver, Colorado, United States\",\n                     zoom=12,\n                     maptype = 'terrain',\n                     color = \"bw\")) \n\nshinyServer(\n  function(input, output){\n    \n    output$categoryList = unique(df$OFFENSE_CATEGORY_ID)\n    output$neighborhoodList = unique(df$NEIGHBORHOOD_ID)\n    output$typeList = unique(df$OFFENSE_TYPE_ID)\n    \n    output$chart = renderPlot({\n      pMap + geom_point(data=df %>%\n                          filter(date == '2016-01-01'),\n                        aes(x=GEO_LON,\n                            y=GEO_LAT,\n                            col=NEIGHBORHOOD_ID)\n                        ) + \n        theme(legend.position='none')\n      \n    })\n  }\n)",
+    "created" : 1485037781432.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3652852412",
+    "id" : "E59FFDA",
+    "lastKnownWriteTime" : 1485041862,
+    "last_content_update" : 1485041862233,
+    "path" : "~/Documents/GitHub/Denver-Crime-Analysis/shinyApp/server.R",
+    "project_path" : "shinyApp/server.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
