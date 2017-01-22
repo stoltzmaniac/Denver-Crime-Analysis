@@ -27,9 +27,23 @@ pMap = ggmap(get_map(location = "Denver, Colorado, United States",
 shinyServer(
   function(input, output){
     
-    output$categoryList = unique(df$OFFENSE_CATEGORY_ID)
-    output$neighborhoodList = unique(df$NEIGHBORHOOD_ID)
-    output$typeList = unique(df$OFFENSE_TYPE_ID)
+    output$categoryList = renderUI({
+      selectInput("variable1","Choose Option",
+        unique(df$OFFENSE_CATEGORY_ID)
+      )
+      })
+    
+    output$neighborhoodList = renderUI({
+      selectInput("variable2","Choose Option",
+        unique(df$NEIGHBORHOOD_ID)
+      )
+      })
+    
+    output$typeList = renderUI({
+      selectInput("variable3","Choose Option",
+        unique(df$OFFENSE_TYPE_ID)
+      )
+      })
     
     output$chart = renderPlot({
       pMap + geom_point(data=df %>%

@@ -8,12 +8,8 @@ shinyUI(fluidPage(
       
       selectInput("var", 
                   label = "Choose a variable to display",
-                  choices = outp,
-                  selected = ),
-      
-      sliderInput("range", 
-                  label = "Range of interest:",
-                  min = 0, max = 100, value = c(0, 100))
+                  choices = uiOutput(NEIGHBORHOOD_ID),
+                  selected = uiOutput(NEIGHBORHOOD_ID))
     ),
     
     mainPanel(plotOutput("chart"))
