@@ -8,8 +8,7 @@ shinyUI(fluidPage(
       
       selectInput("var", 
                   label = "Choose a variable to display",
-                  choices = uiOutput(NEIGHBORHOOD_ID),
-                  selected = uiOutput(NEIGHBORHOOD_ID))
+                  choices = uiOutput(NEIGHBORHOOD_ID))
     ),
     
     mainPanel(plotOutput("chart"))

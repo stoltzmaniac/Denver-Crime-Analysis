@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(RSQLite)\nlibrary(ggmap)\nlibrary(ggplot2)\n\nshinyServer(\n  function(input, output){\n    \n    output$chart = renderPlot({\n      pMap + geom_point(data=df %>% filter(State==input$stateFilter),\n                        aes(x=longitude,\n                            y=latitude,\n                            col=Score)\n                        ) + \n        theme(legend.position='none')\n      \n    })\n  }\n)",
+    "created" : 1485129983054.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "435002408",
+    "id" : "D10BA8E3",
+    "lastKnownWriteTime" : 1485130076,
+    "last_content_update" : 1485130076835,
+    "path" : "~/Documents/GitHub/Medicare/shinyApp/server.R",
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

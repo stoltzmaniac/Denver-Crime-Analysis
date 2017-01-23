@@ -1,16 +1,16 @@
 {
     "collab_server" : "",
-    "contents" : "shinyUI(fluidPage(\n  titlePanel(\"Denver Crime Data\"),\n  \n  sidebarLayout(\n    sidebarPanel(\n      helpText(\"Create demographic maps with \n        information from the 2010 US Census.\"),\n      \n      selectInput(\"var\", \n                  label = \"Choose a variable to display\",\n                  choices = uiOutput(NEIGHBORHOOD_ID),\n                  selected = uiOutput(NEIGHBORHOOD_ID))\n    ),\n    \n    mainPanel(plotOutput(\"chart\"))\n  )\n))",
+    "contents" : "shinyUI(fluidPage(\n  titlePanel(\"Medicare Data\"),\n  \n  sidebarLayout(\n    sidebarPanel(\n      helpText(\"Pick One:\"),\n      \n      selectInput(\"stateFilter\", \n                  label = \"pick one\",\n                  choices = stateChoices,\n                  selected=stateChoices[1])\n    ),\n    \n    mainPanel(plotOutput(\"chart\"))\n  )\n))",
     "created" : 1485037825865.000,
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "3735427191",
+    "hash" : "4278187977",
     "id" : "427634A1",
-    "lastKnownWriteTime" : 1485043895,
-    "last_content_update" : 1485043895938,
-    "path" : "~/Documents/GitHub/Denver-Crime-Analysis/shinyApp/ui.R",
-    "project_path" : "shinyApp/ui.R",
+    "lastKnownWriteTime" : 1485130175,
+    "last_content_update" : 1485130175027,
+    "path" : "~/Documents/GitHub/Medicare/shinyApp/ui.R",
+    "project_path" : null,
     "properties" : {
         "tempName" : "Untitled1"
     },

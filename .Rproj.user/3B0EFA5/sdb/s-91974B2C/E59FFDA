@@ -1,16 +1,16 @@
 {
     "collab_server" : "",
-    "contents" : "library(RSQLite)\nlibrary(dplyr)\nlibrary(lubridate)\nlibrary(ggmap)\n\ncon = dbConnect(RSQLite::SQLite(),dbname='crime.sqlite')\nrs = dbSendQuery(con, \"SELECT * FROM crime\") \ndata = dbFetch(rs)\ndata$date = as.Date(data$REPORTED_DATE)\ndata$year = year(data$date)\ndata$month = month(data$date)\ndata$day = day(data$date)\ndata$hour = hour(data$REPORTED_DATE)\n\ndf = data %>%\n  select(date,year,month,day,hour,\n         OFFENSE_TYPE_ID,OFFENSE_CATEGORY_ID,\n         GEO_LAT,GEO_LON,NEIGHBORHOOD_ID)\n\nrm(data)\n\npMap = ggmap(get_map(location = \"Denver, Colorado, United States\",\n                     zoom=12,\n                     maptype = 'terrain',\n                     color = \"bw\")) \n\nshinyServer(\n  function(input, output){\n    \n    output$categoryList = renderUI({\n      selectInput(\"variable1\",\"Choose Option\",\n        unique(df$OFFENSE_CATEGORY_ID)\n      )\n      })\n    \n    output$neighborhoodList = renderUI({\n      selectInput(\"variable2\",\"Choose Option\",\n        unique(df$NEIGHBORHOOD_ID)\n      )\n      })\n    \n    output$typeList = renderUI({\n      selectInput(\"variable3\",\"Choose Option\",\n        unique(df$OFFENSE_TYPE_ID)\n      )\n      })\n    \n    output$chart = renderPlot({\n      pMap + geom_point(data=df %>%\n                          filter(date == '2016-01-01'),\n                        aes(x=GEO_LON,\n                            y=GEO_LAT,\n                            col=NEIGHBORHOOD_ID)\n                        ) + \n        theme(legend.position='none')\n      \n    })\n  }\n)",
+    "contents" : "library(RSQLite)\nlibrary(ggmap)\nlibrary(ggplot2)\nlibrary(zipcode)\nlibrary(choroplethrMaps)\nlibrary(choroplethr)\nlibrary(dplyr)\n#Data from https://catalog.data.gov/dataset/healthcare-associated-infections-hospital-3ca5e\n#TheÂ Healthcare-Associated Infection (HAI)Â measures - provider data. These measures are developed byÂ Centers for Disease Control and Prevention (CDC)Â and collected through theÂ National Healthcare Safety Network (NHSN). They provide information on infections that occur while the patient is in the hospital. These infections can be related to devices, such as central lines and urinary catheters, or spread from patient to patient after contact with an infected person or surface. Many healthcare associated infections can be prevented when the hospitals useÂ CDC-recommended infection control steps.\n\ncon = dbConnect(RSQLite::SQLite(),dbname='medicare.sqlite')\nrs = dbSendQuery(con, \"SELECT * FROM medicare\") \ndata = dbFetch(rs)\ndata$zip = clean.zipcodes(data$ZIP.Code)\ndata(zipcode)\ndata=merge(data,zipcode,by.x=\"zip\",by.y=\"zip\")\n\ndf = data %>%\n  select(City,State,latitude,longitude,Score,Measure.Name,Hospital.Name)\n\nrm(data)\n\npMap = ggmap(get_map(location = \"United States\",\n                     zoom=4,\n                     maptype = 'terrain',\n                     color = \"bw\")) \n\n\n###Input Filter Options\nstateChoices = sort(unique(df$State))\n",
     "created" : 1485037781432.000,
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1890353593",
+    "hash" : "2709297652",
     "id" : "E59FFDA",
-    "lastKnownWriteTime" : 1485043767,
-    "last_content_update" : 1485043767610,
-    "path" : "~/Documents/GitHub/Denver-Crime-Analysis/shinyApp/server.R",
-    "project_path" : "shinyApp/server.R",
+    "lastKnownWriteTime" : 1485130315,
+    "last_content_update" : 1485130315950,
+    "path" : "~/Documents/GitHub/Medicare/shinyApp/global.R",
+    "project_path" : null,
     "properties" : {
         "tempName" : "Untitled1"
     },
