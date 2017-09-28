@@ -3,14 +3,21 @@ shinyUI(fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      helpText("Create demographic maps with 
-        information from the 2010 US Census."),
+      helpText("Data Source: https://www.denvergov.org/opendata/dataset/city-and-county-of-denver-crime"),
       
-      selectInput("var", 
-                  label = "Choose a variable to display",
-                  choices = uiOutput(NEIGHBORHOOD_ID))
-    ),
+      dateRangeInput("reportedDateRange", "Reported Date Range:",
+                     start = min(df$REPORTED_DATE), end = max(df$REPORTED_DATE)),
     
-    mainPanel(plotOutput("chart"))
+      checkboxGroupInput("offenseCategory", "Offense Category:",
+                         choices = OFFENSE_CATEGORY_CHOICES,
+                         selected = OFFENSE_CATEGORY_CHOICES[1:3])
+      
+      ),
+  
+    mainPanel(
+      #plotOutput("chart")
+      #plotlyOutput("plot")
+      plotOutput('plot')
+      )
   )
 ))

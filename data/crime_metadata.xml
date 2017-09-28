@@ -1,0 +1,131 @@
+﻿<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <title>crime</title>
+        <geoform>vector digital data</geoform>
+      </citeinfo>
+    </citation>
+    <spdom>
+      <bounding>
+        <westbc>-105.299546</westbc>
+        <eastbc>0.001419</eastbc>
+        <northbc>39.905873</northbc>
+        <southbc>0.001422</southbc>
+      </bounding>
+    </spdom>
+    <accconst>None</accconst>
+    <useconst>None</useconst>
+    <native> Version 6.2 (Build 9200) ; Esri ArcGIS 10.4.1.5686</native>
+  </idinfo>
+  <spdoinfo>
+    <direct>Vector</direct>
+    <ptvctinf>
+      <sdtsterm>
+        <sdtstype>Entity point</sdtstype>
+        <ptvctcnt>456744</ptvctcnt>
+      </sdtsterm>
+    </ptvctinf>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <geograph>
+        <latres>8.9831573291121458e-009</latres>
+        <longres>8.9831573291121458e-009</longres>
+        <geogunit>Decimal Degrees</geogunit>
+      </geograph>
+      <geodetic>
+        <horizdn>D WGS 1984</horizdn>
+        <ellips>WGS 1984</ellips>
+        <semiaxis>6378137.0</semiaxis>
+        <denflat>298.257223563</denflat>
+      </geodetic>
+    </horizsys>
+  </spref>
+  <eainfo>
+    <detailed>
+      <enttyp>
+        <enttypl>crime</enttypl>
+      </enttyp>
+      <attr>
+        <attrlabl>OBJECTID</attrlabl>
+        <attrdef>Internal feature number.</attrdef>
+        <attrdefs>Esri</attrdefs>
+        <attrdomv>
+          <udom>Sequential unique whole numbers that are automatically generated.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>INCIDENT_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>OFFENSE_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>OFFENSE_CODE</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>OFFENSE_CODE_EXTENSION</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>OFFENSE_TYPE_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>OFFENSE_CATEGORY_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>FIRST_OCCURRENCE_DATE</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>LAST_OCCURRENCE_DATE</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>REPORTED_DATE</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>INCIDENT_ADDRESS</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>GEO_X</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>GEO_Y</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>GEO_LON</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>GEO_LAT</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>DISTRICT_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>PRECINCT_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>NEIGHBORHOOD_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>IS_CRIME</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>IS_TRAFFIC</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>SHAPE</attrlabl>
+        <attrdef>Feature geometry.</attrdef>
+        <attrdefs>Esri</attrdefs>
+        <attrdomv>
+          <udom>Coordinates defining the features.</udom>
+        </attrdomv>
+      </attr>
+    </detailed>
+  </eainfo>
+  <metainfo>
+    <metd>20170927</metd>
+    <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+    <metstdv>FGDC-STD-001-1998</metstdv>
+    <mettc>local time</mettc>
+  </metainfo>
+</metadata>
