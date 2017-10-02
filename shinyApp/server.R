@@ -1,49 +1,86 @@
 shinyServer(
   function(input, output){
     
-    # output$reportedDateList = renderUI({
-    #   dateRangeInput("reportedDateRange", "Reported Date Range:",
-    #                  start = min(df$REPORTED_DATE), end = max(df$REPORTED_DATE))
-    # })
-    # 
-    # output$categoryList = renderUI({
-    #   selectInput("variable1","Choose Option",
-    #     unique(df$OFFENSE_CATEGORY_ID)
-    #   )
-    #   })
-    # 
-    # output$neighborhoodList = renderUI({
-    #   selectInput("variable2","Choose Option",
-    #     unique(df$NEIGHBORHOOD_ID)
-    #   )
-    #   })
-    # 
-    # output$typeList = renderUI({
-    #   selectInput("variable3","Choose Option",
-    #     unique(df$OFFENSE_TYPE_ID)
-    #   )
-    #   })
-    
-    # output$chart = renderPlot({
-    #   ggplot(df %>% mutate(date = as.Date(REPORTED_DATE)) %>% group_by(date) %>% summarise(n=n()), aes(x=date,y=n)) + geom_line()
-    
-    df_reactive = reactive({
+    df_dow_reactive = eventReactive(input$updateFilter, {
       tmp = df %>% 
-        group_by(DayOfWeek, OFFENSE_CATEGORY_ID) %>% filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
-        mutate_if(is.numeric,sum)
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        group_by(DayOfWeek, OFFENSE_CATEGORY_ID) %>% 
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
     })
-  
-    # output$plot = renderPlotly({
-    #   df_filtered = df_reactive()
-    #   p = ggplot(df_filtered, aes(x = Date, y = reportedIncidents, col = OFFENSE_CATEGORY_ID)) + geom_line() + theme_minimal()
-    #   ggplotly(p)
-    # })
     
-    output$plot = renderPlot({
-      df_filtered = df_reactive()
+    df_moy_reactive = eventReactive(input$updateFilter, {
+      tmp = df %>% 
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        group_by(Month, OFFENSE_CATEGORY_ID) %>% 
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
+    })
+    
+    df_hod_reactive = eventReactive(input$updateFilter, {
+      tmp = df %>% 
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        group_by(Hour, OFFENSE_CATEGORY_ID) %>% 
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
+    })
+    
+    df_ts_reactive = eventReactive(input$updateFilter, {
+      tmp = df %>% arrange(Year,Month) %>% 
+        mutate(Year_Month = factor(paste0(Year, "_", Month))) %>%
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        group_by(Year_Month, OFFENSE_CATEGORY_ID) %>% 
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
+    })
+    
+    df_neighborhood_reactive = eventReactive(input$updateFilter, {
+      tmp = df %>% 
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        group_by(NEIGHBORHOOD_ID) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
+    })
+    
+    output$plotDOW = renderPlot({
+      df_filtered = df_dow_reactive()
       ggplot(df_filtered, aes(x = DayOfWeek, y = reportedIncidents, col = OFFENSE_CATEGORY_ID, fill = OFFENSE_CATEGORY_ID)) + 
         geom_bar(stat='identity') +
         facet_wrap(~OFFENSE_CATEGORY_ID, scales='free') + 
+        theme(legend.position = 'none')
+    })
+    
+    output$plotHOD = renderPlot({
+      df_filtered = df_hod_reactive()
+      ggplot(df_filtered, aes(x = Hour, y = reportedIncidents, col = OFFENSE_CATEGORY_ID, fill = OFFENSE_CATEGORY_ID)) + 
+        geom_bar(stat='identity') +
+        facet_wrap(~OFFENSE_CATEGORY_ID, scales='free') + 
+        theme(legend.position = 'none')
+    })
+    
+    output$plotMOY = renderPlot({
+      df_filtered = df_moy_reactive()
+      ggplot(df_filtered, aes(x = Month, y = reportedIncidents, col = OFFENSE_CATEGORY_ID, fill = OFFENSE_CATEGORY_ID)) + 
+        geom_bar(stat='identity') +
+        facet_wrap(~OFFENSE_CATEGORY_ID, scales='free') + 
+        theme(legend.position = 'none')
+    })
+    
+    output$timeSeriesPlot = renderPlot({
+      df_filtered = df_ts_reactive()
+      ggplot(df_filtered, aes(x = Year_Month, y = reportedIncidents, group=OFFENSE_CATEGORY_ID, col = OFFENSE_CATEGORY_ID, fill = OFFENSE_CATEGORY_ID)) + 
+        geom_line() +
+        geom_smooth(se=FALSE) +
+        facet_wrap(~OFFENSE_CATEGORY_ID, scales='free') + 
+        theme(legend.position = 'none')
+    })
+    
+    output$neighborhood = renderPlot({
+      df_filtered = df_neighborhood_reactive()
+      ggplot(df_filtered, aes(x = reorder(NEIGHBORHOOD_ID, reportedIncidents), y = reportedIncidents)) + 
+        geom_bar(stat='identity') + 
+        xlab('NEIGHBORHOOD_ID') +
+        coord_flip() + 
         theme(legend.position = 'none')
     })
     
