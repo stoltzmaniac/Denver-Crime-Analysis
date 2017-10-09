@@ -7,6 +7,14 @@ shinyUI(fluidPage(
       
       dateRangeInput("reportedDateRange", "Reported Date Range:",
                      start = min(df$REPORTED_DATE), end = max(df$REPORTED_DATE)),
+      
+      selectInput("groupTimeChoice", "Explore by Time Period:",
+                  choices = c("Year","Month","DayOfWeek","Hour"),
+                  selected = "DayOfWeek"),
+      
+      selectInput("groupCategory","Explore Data by Category:",
+                  choices = c("OFFENSE_CATEGORY_ID", "OFFENSE_TYPE_ID", "NEIGHBORHOOD_ID", "IS_TRAFFIC", "IS_CRIME"),
+                  selected = "OFFENSE_CATEGORY_ID"),
     
       checkboxGroupInput("offenseCategory", "Offense Category:",
                          choices = OFFENSE_CATEGORY_CHOICES,
