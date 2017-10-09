@@ -51,6 +51,17 @@ shinyServer(
         top_n(input$neighborhoodRows)
     })
     
+    df_map_reactive = eventReactive(input$updateFilter, {
+      tmp = df %>% 
+        filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
+        filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
+        group_by(GEO_LAT,GEO_LON,NEIGHBORHOOD_ID,OFFENSE_CATEGORY_ID) %>% 
+        summarise(reportedIncidents = sum(reportedIncidents))
+      set.seed(10)
+      tmp = tmp[sample(nrow(tmp)),]
+      tmp = head(tmp,input$mapRows)
+    })
+    
     output$plotDOW = renderPlot({
       df_filtered = df_time_group_reactive()
       ggplot(df_filtered, aes_string(x = input$groupTimeChoice, y = "reportedIncidents", col = input$groupCategory, fill = input$groupCategory)) + 
@@ -91,6 +102,14 @@ shinyServer(
         xlab('NEIGHBORHOOD_ID') +
         coord_flip() + 
         theme(legend.position = 'none')
+    })
+    
+    output$map = renderLeaflet({
+      df_filtered = df_map_reactive()
+      leaflet() %>%
+        setView(lng = -104.9903, lat = 39.7392, zoom = 10) %>%
+        addProviderTiles("Stamen.TonerLite", options = providerTileOptions(noWrap = TRUE)) %>% 
+        addCircleMarkers(data = df_filtered, lat = ~GEO_LAT, lng = ~GEO_LON, radius = 1, color = "#FF4742")
     })
     
   }

@@ -44,7 +44,16 @@ shinyUI(fluidPage(
                                                 max = 25,
                                                 value = 15),
                                     plotOutput('neighborhood'))
-                           )
+                           ),
+                  
+                  tabPanel('Map', p(),
+                           fluidRow(sliderInput("mapRows", "Maximum Results: ",
+                                                min = 100,
+                                                max = 5000,
+                                                value = 300,
+                                                step = 100),
+                                    leafletOutput('map'))
+                          )
       )
   )
 )))
