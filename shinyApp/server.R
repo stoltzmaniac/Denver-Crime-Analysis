@@ -47,7 +47,8 @@ shinyServer(
         filter(Date >= input$reportedDateRange[1] & Date <= input$reportedDateRange[2]) %>%
         filter(OFFENSE_CATEGORY_ID %in% input$offenseCategory) %>% 
         group_by(NEIGHBORHOOD_ID) %>% 
-        summarise(reportedIncidents = sum(reportedIncidents))
+        summarise(reportedIncidents = sum(reportedIncidents)) %>%
+        top_n(input$neighborhoodRows)
     })
     
     output$plotDOW = renderPlot({
