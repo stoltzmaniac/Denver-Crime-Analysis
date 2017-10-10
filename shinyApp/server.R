@@ -109,7 +109,7 @@ shinyServer(
       leaflet() %>%
         setView(lng = -104.9903, lat = 39.7392, zoom = 10) %>%
         addProviderTiles("Stamen.TonerLite", options = providerTileOptions(noWrap = TRUE)) %>% 
-        addCircleMarkers(data = df_filtered, lat = ~GEO_LAT, lng = ~GEO_LON, radius = 1, color = "#FF4742")
+        addCircleMarkers(data = df_filtered, lat = ~GEO_LAT, lng = ~GEO_LON, radius = ~reportedIncidents, color = "#FF4742")
     })
     
   }
